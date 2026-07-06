@@ -9,7 +9,7 @@ definePage({
 import { ref } from 'vue'
 
 import ArticleLive from '@/components/article/ArticleLive.vue'
-import { fetchRandomArticle } from '@/components/article/shared/randomArticle'
+import { fetchRandomArticleWithGallery } from '@/components/article/shared/randomArticle'
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import MobileWrapper from '@/components/MobileWrapper.vue'
 
@@ -24,7 +24,7 @@ async function handleLogoClick(event: MouseEvent) {
   if (loadingRandomArticle.value) return
   loadingRandomArticle.value = true
   try {
-    const random = await fetchRandomArticle()
+    const random = await fetchRandomArticleWithGallery()
     articleHost.value = random.host
     articleTitle.value = random.title
   } catch (err) {
