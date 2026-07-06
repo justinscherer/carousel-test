@@ -68,6 +68,11 @@ const effectiveUsername = computed(() => props.username ?? displayName.value)
 
 provide(PROTOWIKI_CHROME_SKIN, effectiveSkin)
 provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
+
+const emit = defineEmits<{
+  /** Re-emitted from `ChromeHeader`'s wordmark/logo tap. */
+  logoClick: [event: MouseEvent]
+}>()
 </script>
 
 <template>
@@ -87,6 +92,7 @@ provide(PROTOWIKI_CHROME_THEME, effectiveTheme)
         :tagline-src="props.taglineSrc"
         :mobile-wordmark-src="props.mobileWordmarkSrc"
         :nav-tools="props.navTools"
+        @logo-click="emit('logoClick', $event)"
       >
         <template v-if="$slots.menu" #menu>
           <slot name="menu" />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
@@ -83,6 +83,24 @@ const effectiveNavTools = computed(() =>
 function navHas(tool: ChromeNavTool): boolean {
   return effectiveNavTools.value.includes(tool)
 }
+
+const emit = defineEmits<{
+  /** Wordmark/logo tapped. Default navigation to `/` still happens unless a listener calls `event.preventDefault()`. */
+  logoClick: [event: MouseEvent]
+}>()
+
+const router = useRouter()
+
+// Own the whole click lifecycle instead of using RouterLink: its built-in
+// click handler calls router.push() synchronously and doesn't check
+// e.defaultPrevented against listeners added *after* it, so a caller's
+// preventDefault() in a `@logo-click` handler can't reliably cancel it.
+function onLogoClick(event: MouseEvent) {
+  emit('logoClick', event)
+  if (event.defaultPrevented) return
+  event.preventDefault()
+  void router.push('/')
+}
 </script>
 
 <template>
@@ -105,7 +123,12 @@ function navHas(tool: ChromeNavTool): boolean {
           </span>
         </slot>
 
-        <RouterLink class="chrome-header__brand-link" to="/" aria-label="Visit the main page">
+        <a
+          class="chrome-header__brand-link"
+          href="/"
+          aria-label="Visit the main page"
+          @click="onLogoClick"
+        >
           <slot name="logo">
             <span class="chrome-header__wordmarks">
               <img
@@ -124,7 +147,7 @@ function navHas(tool: ChromeNavTool): boolean {
               />
             </span>
           </slot>
-        </RouterLink>
+        </a>
       </div>
 
       <div class="chrome-header__inline-search">
@@ -233,7 +256,12 @@ function navHas(tool: ChromeNavTool): boolean {
         </CdxButton>
       </slot>
 
-      <RouterLink class="chrome-header__mobile-brand" to="/" aria-label="Visit the main page">
+      <a
+        class="chrome-header__mobile-brand"
+        href="/"
+        aria-label="Visit the main page"
+        @click="onLogoClick"
+      >
         <slot name="logo">
           <img
             class="chrome-header__mobile-wordmark-img"
@@ -241,7 +269,7 @@ function navHas(tool: ChromeNavTool): boolean {
             alt="Wikipedia"
           />
         </slot>
-      </RouterLink>
+      </a>
 
       <div class="chrome-header__mobile-actions">
         <CdxButton
