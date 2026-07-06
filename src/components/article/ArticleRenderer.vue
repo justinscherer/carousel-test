@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onUpdated, ref, watch } from 'vue'
 
+import { useConfig } from '@/composables/useConfig'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import ArticleImageCarousel from './ArticleImageCarousel.vue'
@@ -31,8 +32,14 @@ const effectiveTheme = computed<Theme>(
 
 const mwParserOutputRef = ref<HTMLElement | null>(null)
 const carouselImages = ref<CarouselImage[]>([])
+const { user } = useConfig()
 
 function enhanceMobileSectionHeadings(root: HTMLElement) {
+  // Logged-out readers land on an article with every H2 section collapsed
+  // (matches real Wikipedia mobile web's default reading experience);
+  // logged-in editors keep the expanded default set below.
+  const collapsedByDefault = user.value === 'logged-out'
+
   root.querySelectorAll<HTMLHeadingElement>('section > h2').forEach((h2) => {
     if (h2.closest('.toc')) return
     if (h2.classList.contains('protowiki-mobile-h2--ready')) return
@@ -55,13 +62,17 @@ function enhanceMobileSectionHeadings(root: HTMLElement) {
     const titleText = h2.textContent?.trim() ?? ''
     h2.textContent = ''
     h2.classList.add('protowiki-mobile-h2', 'protowiki-mobile-h2--ready')
-    h2.setAttribute('aria-expanded', 'true')
+    h2.setAttribute('aria-expanded', collapsedByDefault ? 'false' : 'true')
     h2.setAttribute('tabindex', '0')
+    if (collapsedByDefault) {
+      body.classList.add('protowiki-mobile-section-body--collapsed')
+      h2.classList.add('protowiki-mobile-h2--collapsed')
+    }
 
     const chevron = document.createElement('span')
     chevron.className = 'protowiki-mobile-h2__chevron'
     chevron.setAttribute('aria-hidden', 'true')
-    chevron.innerHTML = mobileH2ChevronSvg(false)
+    chevron.innerHTML = mobileH2ChevronSvg(collapsedByDefault)
 
     const label = document.createElement('span')
     label.className = 'protowiki-mobile-h2__label'
