@@ -1,0 +1,20 @@
+<script setup lang="ts">
+definePage({
+  meta: {
+    title: 'Template: Article (mobile, read mode)',
+    description: 'Article read-mode template using the Minerva (mobile) skin.',
+  },
+})
+
+import ArticleLive from '@/components/article/ArticleLive.vue'
+import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
+import MobileWrapper from '@/components/MobileWrapper.vue'
+</script>
+
+<template>
+  <MobileWrapper>
+    <ChromeWrapper skin="mobile">
+      <ArticleLive article="Wet Leg" skin="mobile" />
+    </ChromeWrapper>
+  </MobileWrapper>
+</template>
