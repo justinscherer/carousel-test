@@ -14,7 +14,15 @@ import MobileWrapper from '@/components/MobileWrapper.vue'
 <template>
   <MobileWrapper>
     <ChromeWrapper skin="mobile">
-      <ArticleLive article="Wet Leg" skin="mobile" />
+      <main>
+        <ArticleLive article="Wet Leg" skin="mobile" />
+      </main>
     </ChromeWrapper>
   </MobileWrapper>
 </template>
+
+<style scoped>
+main {
+  padding: 0 var(--spacing-100);
+}
+</style>
