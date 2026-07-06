@@ -7,6 +7,7 @@ definePage({
 })
 
 import { ref } from 'vue'
+import { CdxProgressBar } from '@wikimedia/codex'
 
 import ArticleLive from '@/components/article/ArticleLive.vue'
 import { fetchRandomArticleWithGallery } from '@/components/article/shared/randomArticle'
@@ -38,6 +39,11 @@ async function handleLogoClick(event: MouseEvent) {
 <template>
   <MobileWrapper>
     <ChromeWrapper skin="mobile" @logo-click="handleLogoClick">
+      <CdxProgressBar
+        v-if="loadingRandomArticle"
+        inline
+        aria-label="Finding a random article with enough images for the gallery"
+      />
       <main>
         <ArticleLive :article="articleTitle" :host="articleHost" skin="mobile" />
       </main>
