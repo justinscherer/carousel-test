@@ -3,7 +3,9 @@ import { computed, inject, nextTick, onUpdated, ref, watch } from 'vue'
 
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
+import ArticleImageCarousel from './ArticleImageCarousel.vue'
 import { mobileH2ChevronSvg, mobileH2EditIconSvg } from './shared/mobileH2CodexIcons'
+import { extractCarouselImages, type CarouselImage } from './shared/extractCarouselImages'
 
 interface Props {
   lang?: string
@@ -28,6 +30,7 @@ const effectiveTheme = computed<Theme>(
 )
 
 const mwParserOutputRef = ref<HTMLElement | null>(null)
+const carouselImages = ref<CarouselImage[]>([])
 
 function enhanceMobileSectionHeadings(root: HTMLElement) {
   root.querySelectorAll<HTMLHeadingElement>('section > h2').forEach((h2) => {
@@ -133,13 +136,28 @@ function enhanceMobileLeadInfoboxOrder(root: HTMLElement) {
   })
 }
 
+function sameCarouselImages(a: CarouselImage[], b: CarouselImage[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((img, i) => img.src === b[i].src && img.caption === b[i].caption)
+}
+
 async function applyMobileEnhancements() {
   await nextTick()
-  if (effectiveSkin.value !== 'mobile') return
+  if (effectiveSkin.value !== 'mobile') {
+    if (carouselImages.value.length) carouselImages.value = []
+    return
+  }
   const root = mwParserOutputRef.value
   if (!root) return
   enhanceMobileSectionHeadings(root)
   enhanceMobileLeadInfoboxOrder(root)
+  // Re-extracting on every onUpdated() is cheap, but assigning a fresh array
+  // reference every time would retrigger this component's own re-render
+  // (carouselImages is read in the template) → onUpdated() → infinite loop.
+  const nextImages = extractCarouselImages(root)
+  if (!sameCarouselImages(carouselImages.value, nextImages)) {
+    carouselImages.value = nextImages
+  }
 }
 
 watch(
@@ -163,6 +181,8 @@ onUpdated(() => {
     :lang="props.lang"
     :dir="props.dir"
   >
+    <ArticleImageCarousel v-if="effectiveSkin === 'mobile'" :images="carouselImages" />
+
     <!--
       Caller supplies default slot — Parsoid / snapshot markup via Vue v-html
       wrappers is fine (see ArticleLive). Inner :key resets DOM on skin toggle

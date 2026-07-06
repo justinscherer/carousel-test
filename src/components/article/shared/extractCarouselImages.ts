@@ -1,0 +1,64 @@
+/**
+ * Pulls every "real" image (as opposed to icons/flags/OOUI glyphs) out of a
+ * rendered `.mw-parser-output` subtree for display in `ArticleImageCarousel`.
+ *
+ * "Real" is decided by the `<img>` tag's own `width`/`height` attributes,
+ * which Parsoid `page/html` sets to the rendered thumbnail size (e.g.
+ * `width="250" height="167"` for a photo vs `width="10" height="10"` for an
+ * OOUI icon). That's synchronous and stable, unlike `naturalWidth` /
+ * `getBoundingClientRect`, which depend on the image finishing its network
+ * load or on layout that hasn't happened yet.
+ */
+
+const MIN_DIMENSION = 50
+
+export interface CarouselImage {
+  src: string
+  srcset?: string
+  alt: string
+  caption?: string
+}
+
+function readDimension(img: HTMLImageElement, attr: 'width' | 'height'): number {
+  const fromAttr = Number(img.getAttribute(attr))
+  if (Number.isFinite(fromAttr) && fromAttr > 0) return fromAttr
+  return attr === 'width' ? img.naturalWidth : img.naturalHeight
+}
+
+function captionFor(img: HTMLImageElement): string | undefined {
+  const figcaption = img.closest('figure')?.querySelector('figcaption')
+  if (figcaption) {
+    const text = figcaption.textContent?.trim()
+    if (text) return text
+  }
+
+  const infoboxCaption = img.closest('td, th')?.querySelector<HTMLElement>('.infobox-caption')
+  const text = infoboxCaption?.textContent?.trim()
+  return text || undefined
+}
+
+export function extractCarouselImages(root: HTMLElement): CarouselImage[] {
+  const images: CarouselImage[] = []
+  const seenSrc = new Set<string>()
+
+  root.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+    const width = readDimension(img, 'width')
+    const height = readDimension(img, 'height')
+    if (width <= MIN_DIMENSION && height <= MIN_DIMENSION) return
+
+    const src = img.currentSrc || img.getAttribute('src') || ''
+    if (!src || seenSrc.has(src)) return
+    seenSrc.add(src)
+
+    const caption = captionFor(img)
+
+    images.push({
+      src,
+      srcset: img.getAttribute('srcset') ?? undefined,
+      alt: img.getAttribute('alt') || caption || '',
+      caption,
+    })
+  })
+
+  return images
+}
