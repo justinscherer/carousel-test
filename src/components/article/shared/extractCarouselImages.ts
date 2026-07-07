@@ -8,6 +8,11 @@
  * OOUI icon). That's synchronous and stable, unlike `naturalWidth` /
  * `getBoundingClientRect`, which depend on the image finishing its network
  * load or on layout that hasn't happened yet.
+ *
+ * Infobox images are excluded — they're already visible above the fold on
+ * mobile in most languages, so pulling them into the carousel too would be
+ * redundant. This also means an infobox's lead photo doesn't count toward
+ * the minimum-image gallery threshold (see `randomArticle.ts`).
  */
 
 const MIN_DIMENSION = 50
@@ -27,13 +32,7 @@ function readDimension(img: HTMLImageElement, attr: 'width' | 'height'): number 
 
 function captionFor(img: HTMLImageElement): string | undefined {
   const figcaption = img.closest('figure')?.querySelector('figcaption')
-  if (figcaption) {
-    const text = figcaption.textContent?.trim()
-    if (text) return text
-  }
-
-  const infoboxCaption = img.closest('td, th')?.querySelector<HTMLElement>('.infobox-caption')
-  const text = infoboxCaption?.textContent?.trim()
+  const text = figcaption?.textContent?.trim()
   return text || undefined
 }
 
@@ -42,6 +41,8 @@ export function extractCarouselImages(root: HTMLElement): CarouselImage[] {
   const seenSrc = new Set<string>()
 
   root.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+    if (img.closest('table.infobox')) return
+
     const width = readDimension(img, 'width')
     const height = readDimension(img, 'height')
     if (width <= MIN_DIMENSION && height <= MIN_DIMENSION) return
