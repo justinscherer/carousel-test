@@ -111,16 +111,16 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
 }
 
 /*
- * Responsive square size: exactly 2 full thumbnails plus a 16px peek of a
+ * Responsive square size: exactly 2 full thumbnails plus a 5px peek of a
  * third fit across the row's own width (100% here — the row already bleeds
  * to the true viewport edge via its negative end margin above, so this
  * tracks the *actual* available width, not a raw `100vw` that would ignore
  * MobileWrapper's centered mobile-column constraint on wider screens).
- * `size*2 + gap*2 + 16px peek = 100%` → `size = (100% - gap*2 - 16px) / 2`.
+ * `size*2 + gap*2 + 5px peek = 100%` → `size = (100% - gap*2 - 5px) / 2`.
  */
 .article-image-carousel__item {
   flex: 0 0 auto;
-  width: clamp(175px, calc((100% - 2 * var(--spacing-35, 6px) - 16px) / 2), 384px);
+  width: clamp(175px, calc((100% - 2 * var(--spacing-35, 6px) - 5px) / 2), 384px);
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
