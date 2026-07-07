@@ -120,11 +120,16 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
   display: block;
 }
 
-/* Fixed 2-line height + plain block overflow clip — a backstop in case the
-   JS truncation above ever overshoots by a sub-pixel font-metric rounding. */
+/*
+ * `max-height` (not `height`) caps a 2-line caption at exactly 2 lines
+ * (backstop for the JS truncation above, in case it ever overshoots by a
+ * sub-pixel font-metric rounding) while letting a 1-line caption size to its
+ * own shorter content — the image below (flex: 1) grows into the difference
+ * instead of leaving blank space under a short caption.
+ */
 .article-image-carousel__caption-clip {
   flex: 0 0 auto;
-  height: calc(2 * var(--line-height-x-small, 18px) + 2 * var(--spacing-50, 8px));
+  max-height: calc(2 * var(--line-height-x-small, 18px) + 2 * var(--spacing-50, 8px));
   overflow: hidden;
 }
 
