@@ -86,6 +86,7 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
 
 <style scoped>
 .article-image-carousel {
+  container-type: inline-size;
   display: flex;
   gap: var(--spacing-35, 6px);
   overflow-x: auto;
@@ -111,17 +112,27 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
 }
 
 /*
- * Responsive square size: exactly 2 full thumbnails plus a 5px peek of a
- * third fit across the row's own width (100% here — the row already bleeds
- * to the true viewport edge via its negative end margin above, so this
- * tracks the *actual* available width, not a raw `100vw` that would ignore
- * MobileWrapper's centered mobile-column constraint on wider screens).
- * `size*2 + gap*2 + 5px peek = 100%` → `size = (100% - gap*2 - 5px) / 2`.
+ * Responsive width: exactly 2 full thumbnails plus a 5px peek of a third
+ * fit across the row's own width. Uses `cqw` (container query width, tied
+ * to `.article-image-carousel`'s own `container-type: inline-size` above)
+ * rather than `100vw` — that would ignore MobileWrapper's centered mobile-
+ * column constraint on wider screens — or bare `%`, which would be a bug
+ * here: `%` resolves against whichever axis the *consuming* property uses
+ * (width vs height), but `cqw` always means "container's inline size"
+ * regardless, so `--thumb-width` gives the same pixel value reused below in
+ * `height` (custom properties are substituted text, not pre-computed
+ * values, so this distinction matters when a variable is reused across
+ * differently-axised properties).
+ * `size*2 + gap*2 + 5px peek = 100cqw` → `size = (100cqw - gap*2 - 5px) / 2`.
+ *
+ * Height is that same width plus a fixed 36px — taller than square, but the
+ * width (and therefore the peek) is untouched.
  */
 .article-image-carousel__item {
+  --thumb-width: clamp(175px, calc((100cqw - 2 * var(--spacing-35, 6px) - 5px) / 2), 384px);
   flex: 0 0 auto;
-  width: clamp(175px, calc((100% - 2 * var(--spacing-35, 6px) - 5px) / 2), 384px);
-  aspect-ratio: 1;
+  width: var(--thumb-width);
+  height: calc(var(--thumb-width) + 36px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
