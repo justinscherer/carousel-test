@@ -9,6 +9,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  open: [image: CarouselImage]
+}>()
+
 const captionEls: (HTMLElement | null)[] = []
 // Vue owns the template's rendered text via this ref; truncateToTwoLines()
 // only ever mutates textContent on a DOM node transiently, for measurement,
@@ -67,7 +71,16 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
 
 <template>
   <div v-if="images.length" class="article-image-carousel" role="group" aria-label="Article images">
-    <div v-for="(image, index) in images" :key="image.src + index" class="article-image-carousel__item">
+    <div
+      v-for="(image, index) in images"
+      :key="image.src + index"
+      class="article-image-carousel__item"
+      role="button"
+      tabindex="0"
+      @click="emit('open', image)"
+      @keydown.enter="emit('open', image)"
+      @keydown.space.prevent="emit('open', image)"
+    >
       <img
         :src="image.src"
         :srcset="image.srcset"
@@ -139,6 +152,12 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
   border: 1px solid var(--border-color-subtle, #c8ccd1);
   border-radius: var(--border-radius-base, 2px);
   background-color: var(--background-color-base);
+  cursor: pointer;
+}
+
+.article-image-carousel__item:focus-visible {
+  outline: 2px solid var(--color-progressive, #36c);
+  outline-offset: 2px;
 }
 
 .article-image-carousel__image {

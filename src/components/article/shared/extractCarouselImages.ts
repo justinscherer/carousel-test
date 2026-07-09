@@ -47,7 +47,13 @@ export function extractCarouselImages(root: HTMLElement): CarouselImage[] {
     const height = readDimension(img, 'height')
     if (width <= MIN_DIMENSION && height <= MIN_DIMENSION) return
 
-    const src = img.currentSrc || img.getAttribute('src') || ''
+    // The literal `src` attribute first, not `currentSrc`: `currentSrc` is
+    // empty until the browser's responsive-image selection algorithm runs,
+    // then can resolve to a *different* srcset entry than whatever this
+    // image was displayed at when first extracted (e.g. a higher-res entry
+    // once actually decoded) — an unstable key for later re-matching this
+    // same `<img>` (see ArticleRenderer.vue's "scroll to image" handler).
+    const src = img.getAttribute('src') || img.currentSrc || ''
     if (!src || seenSrc.has(src)) return
     seenSrc.add(src)
 

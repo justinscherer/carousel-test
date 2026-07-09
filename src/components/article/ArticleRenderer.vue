@@ -5,6 +5,7 @@ import { useConfig } from '@/composables/useConfig'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import ArticleImageCarousel from './ArticleImageCarousel.vue'
+import ArticleImagePreview from './ArticleImagePreview.vue'
 import { mobileH2ChevronSvg, mobileH2EditIconSvg } from './shared/mobileH2CodexIcons'
 import { extractCarouselImages, type CarouselImage } from './shared/extractCarouselImages'
 
@@ -32,6 +33,7 @@ const effectiveTheme = computed<Theme>(
 
 const mwParserOutputRef = ref<HTMLElement | null>(null)
 const carouselImages = ref<CarouselImage[]>([])
+const previewImage = ref<CarouselImage | null>(null)
 const { user } = useConfig()
 
 function enhanceMobileSectionHeadings(root: HTMLElement) {
@@ -171,6 +173,56 @@ async function applyMobileEnhancements() {
   }
 }
 
+/** Finds the original inline `<img>` a `CarouselImage` was extracted from — same matching rule as `extractCarouselImages`. */
+function findOriginalImage(root: HTMLElement, src: string): HTMLImageElement | null {
+  for (const img of root.querySelectorAll<HTMLImageElement>('img')) {
+    if ((img.getAttribute('src') || img.currentSrc) === src) return img
+  }
+  return null
+}
+
+/**
+ * Walks up through ancestor `<section>`s to find the nearest one with a
+ * direct `h2.protowiki-mobile-h2` child — the collapsible accordion level.
+ * The *nearest* enclosing `<section>` alone isn't enough: nested h3
+ * subsections are their own `<section>` with no h2 of their own (only
+ * styled per ArticleRenderer.vue's `section section > h3` rule, not made
+ * individually collapsible), so an image inside one needs to look further
+ * up to find the actual collapsible ancestor.
+ */
+function findAccordionHeading(target: HTMLElement): HTMLElement | null {
+  let section = target.closest('section')
+  while (section) {
+    const heading = section.querySelector<HTMLElement>(':scope > h2.protowiki-mobile-h2')
+    if (heading) return heading
+    section = section.parentElement?.closest('section') ?? null
+  }
+  return null
+}
+
+async function handleScrollToImage() {
+  const image = previewImage.value
+  const root = mwParserOutputRef.value
+  if (!image || !root) return
+
+  const target = findOriginalImage(root, image.src)
+  if (target) {
+    // Expand the ancestor section if the mobile accordion has it collapsed —
+    // dispatch a real click on its h2 rather than duplicating toggle()'s
+    // logic, so chevron/aria-expanded stay in sync via the listener already
+    // attached in enhanceMobileSectionHeadings().
+    const heading = findAccordionHeading(target)
+    if (heading?.classList.contains('protowiki-mobile-h2--collapsed')) {
+      heading.click()
+    }
+  }
+
+  previewImage.value = null
+  if (!target) return
+  await nextTick()
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 watch(
   effectiveSkin,
   () => {
@@ -192,7 +244,16 @@ onUpdated(() => {
     :lang="props.lang"
     :dir="props.dir"
   >
-    <ArticleImageCarousel v-if="effectiveSkin === 'mobile'" :images="carouselImages" />
+    <ArticleImageCarousel
+      v-if="effectiveSkin === 'mobile'"
+      :images="carouselImages"
+      @open="previewImage = $event"
+    />
+    <ArticleImagePreview
+      :image="previewImage"
+      @close="previewImage = null"
+      @scroll-to-image="handleScrollToImage"
+    />
 
     <!--
       Caller supplies default slot — Parsoid / snapshot markup via Vue v-html
