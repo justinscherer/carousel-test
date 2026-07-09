@@ -102,8 +102,16 @@ function onViewDetailsClick() {}
 }
 
 .article-image-preview__image {
+  /*
+   * Still fills the card's full width (upscaling a smaller source image if
+   * needed) whenever that's compatible with the 50vh height cap below —
+   * `object-fit: contain` is what keeps it undistorted (scaled down
+   * proportionally, not squashed) on the images where it isn't.
+   */
   width: 100%;
   height: auto;
+  max-height: 50vh;
+  object-fit: contain;
   display: block;
 }
 
