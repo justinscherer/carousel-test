@@ -161,6 +161,12 @@ function onFullScreenClick() {}
   cursor: pointer;
 }
 
+/* CdxIcon sets its own `color` on `.cdx-icon` rather than inheriting —
+   match the icon to this button's own label color (white vs progressive). */
+.article-image-preview__fab-action :deep(.cdx-icon) {
+  color: inherit;
+}
+
 .article-image-preview__fab-action--primary {
   background-color: var(--background-color-progressive, #36c);
   color: var(--color-inverted-fixed, #fff);
