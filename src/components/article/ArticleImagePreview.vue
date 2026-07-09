@@ -15,8 +15,8 @@ const emit = defineEmits<{
   scrollToImage: []
 }>()
 
-// Full screen is intentionally a no-op for now.
-function onFullScreenClick() {}
+// "View details" is intentionally a no-op for now.
+function onViewDetailsClick() {}
 </script>
 
 <template>
@@ -31,6 +31,20 @@ function onFullScreenClick() {}
             class="article-image-preview__image"
           />
           <p v-if="image.caption" class="article-image-preview__caption">{{ image.caption }}</p>
+          <div class="article-image-preview__actions">
+            <button
+              type="button"
+              class="article-image-preview__action"
+              @click="emit('scrollToImage')"
+            >
+              <CdxIcon :icon="cdxIconArrowDown" />
+              Scroll to image
+            </button>
+            <button type="button" class="article-image-preview__action" @click="onViewDetailsClick">
+              <CdxIcon :icon="cdxIconFullscreen" />
+              View details
+            </button>
+          </div>
           <button
             type="button"
             class="article-image-preview__close"
@@ -38,25 +52,6 @@ function onFullScreenClick() {}
             @click="emit('close')"
           >
             <CdxIcon :icon="cdxIconClose" />
-          </button>
-        </div>
-
-        <div class="article-image-preview__fab" @click.stop>
-          <button
-            type="button"
-            class="article-image-preview__fab-action article-image-preview__fab-action--primary"
-            @click="emit('scrollToImage')"
-          >
-            <CdxIcon :icon="cdxIconArrowDown" />
-            Scroll to image
-          </button>
-          <button
-            type="button"
-            class="article-image-preview__fab-action"
-            @click="onFullScreenClick"
-          >
-            <CdxIcon :icon="cdxIconFullscreen" />
-            Full screen
           </button>
         </div>
       </div>
@@ -97,6 +92,8 @@ function onFullScreenClick() {}
   max-height: 100%;
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-75, 12px);
+  padding-bottom: var(--spacing-100, 16px);
   overflow: auto;
   background-color: var(--background-color-base);
   border: 1px solid var(--border-color-muted, #dadde3);
@@ -112,10 +109,43 @@ function onFullScreenClick() {}
 
 .article-image-preview__caption {
   margin: 0;
-  padding: var(--spacing-100, 16px);
+  padding-inline: var(--spacing-100, 16px);
   font-size: var(--font-size-small, 12px);
   line-height: var(--line-height-x-small, 18px);
   color: var(--color-base, #202122);
+}
+
+.article-image-preview__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-75, 12px);
+  padding-inline: var(--spacing-100, 16px);
+}
+
+.article-image-preview__action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-25, 6px);
+  height: 32px;
+  padding-inline: var(--spacing-75, 12px);
+  border: none;
+  border-radius: var(--border-radius-base, 2px);
+  background-color: transparent;
+  color: var(--color-progressive, #36c);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-medium, 14px);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.article-image-preview__action:hover {
+  background-color: var(--background-color-progressive-subtle, #e8eeff);
+}
+
+/* CdxIcon sets its own `color` on `.cdx-icon` rather than inheriting —
+   match the icon to this button's own label color. */
+.article-image-preview__action :deep(.cdx-icon) {
+  color: inherit;
 }
 
 .article-image-preview__close {
@@ -133,48 +163,6 @@ function onFullScreenClick() {}
   background-color: var(--background-color-backdrop-light);
   color: var(--color-base, #202122);
   cursor: pointer;
-}
-
-.article-image-preview__fab {
-  position: absolute;
-  left: 50%;
-  bottom: var(--spacing-200, 32px);
-  transform: translateX(-50%);
-  z-index: var(--z-index-overlay, 450);
-  display: flex;
-  border-radius: var(--border-radius-base, 2px);
-  overflow: hidden;
-  box-shadow: var(--box-shadow-large);
-}
-
-.article-image-preview__fab-action {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-25, 6px);
-  height: 44px;
-  padding-inline: var(--spacing-100, 16px);
-  border: none;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-medium, 14px);
-  font-weight: var(--font-weight-bold, 700);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* CdxIcon sets its own `color` on `.cdx-icon` rather than inheriting —
-   match the icon to this button's own label color (white vs progressive). */
-.article-image-preview__fab-action :deep(.cdx-icon) {
-  color: inherit;
-}
-
-.article-image-preview__fab-action--primary {
-  background-color: var(--background-color-progressive, #36c);
-  color: var(--color-inverted-fixed, #fff);
-}
-
-.article-image-preview__fab-action:not(.article-image-preview__fab-action--primary) {
-  background-color: var(--background-color-base);
-  color: var(--color-progressive, #36c);
 }
 
 .article-image-preview-fade-enter-active,
