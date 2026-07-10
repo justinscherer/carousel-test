@@ -1,57 +1,44 @@
 import { wikimediaApiFetchHeaders } from '@/config'
 import { extractCarouselImages } from './extractCarouselImages'
+import { VITAL_ARTICLE_TITLES } from './vitalArticles'
 
-/** Top 20 Wikipedia editions by article count (language code → wiki host). */
-export const TOP_20_WIKIPEDIA_LANGUAGE_HOSTS = [
-  'en.wikipedia.org', // English
-  'es.wikipedia.org', // Spanish
-  'fr.wikipedia.org', // French
-  'de.wikipedia.org', // German
-  'it.wikipedia.org', // Italian
-  'ja.wikipedia.org', // Japanese
-  'ru.wikipedia.org', // Russian
-  'zh.wikipedia.org', // Chinese
-  'pl.wikipedia.org', // Polish
-  'nl.wikipedia.org', // Dutch
-  'pt.wikipedia.org', // Portuguese
-  'fa.wikipedia.org', // Persian
-  'he.wikipedia.org', // Hebrew
-  'ko.wikipedia.org', // Korean
-  'ar.wikipedia.org', // Arabic
-  'id.wikipedia.org', // Indonesian
-  'uk.wikipedia.org', // Ukrainian
-  'tr.wikipedia.org', // Turkish
-  'vi.wikipedia.org', // Vietnamese
-  'cs.wikipedia.org', // Czech
-]
+const VITAL_ARTICLE_HOST = 'en.wikipedia.org'
 
 export interface RandomArticle {
   host: string
   title: string
 }
 
-function randomHost(): string {
-  const i = Math.floor(Math.random() * TOP_20_WIKIPEDIA_LANGUAGE_HOSTS.length)
-  return TOP_20_WIKIPEDIA_LANGUAGE_HOSTS[i]
+function randomVitalArticleTitle(): string {
+  const i = Math.floor(Math.random() * VITAL_ARTICLE_TITLES.length)
+  return VITAL_ARTICLE_TITLES[i]
 }
 
-/** Picks a random language from the top-20 list, then a random article on that wiki. */
-export async function fetchRandomArticle(): Promise<RandomArticle> {
-  const host = randomHost()
-  const response = await fetch(`https://${host}/api/rest_v1/page/random/summary`, {
-    headers: {
-      Accept: 'application/json',
-      ...wikimediaApiFetchHeaders('random-article'),
-    },
+/** Resolves a (possibly non-canonical) title to its actual wiki title via Action API `opensearch`. */
+async function resolveArticleTitle(host: string, title: string): Promise<string> {
+  const params = new URLSearchParams({
+    action: 'opensearch',
+    search: title,
+    limit: '1',
+    namespace: '0',
+    format: 'json',
+    origin: '*',
+  })
+  const response = await fetch(`https://${host}/w/api.php?${params.toString()}`, {
+    headers: wikimediaApiFetchHeaders('random-article-resolve'),
   })
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`)
   }
-  const summary = await response.json()
-  const title = summary?.title
-  if (typeof title !== 'string' || !title) {
-    throw new Error('Random article response had no title')
-  }
+  const data = (await response.json()) as [string, string[], string[], string[]]
+  const resolved = data?.[1]?.[0]
+  return typeof resolved === 'string' && resolved ? resolved : title
+}
+
+/** Picks a random English "vital article" and resolves it to its canonical wiki title. */
+export async function fetchRandomArticle(): Promise<RandomArticle> {
+  const host = VITAL_ARTICLE_HOST
+  const title = await resolveArticleTitle(host, randomVitalArticleTitle())
   return { host, title }
 }
 
@@ -75,7 +62,7 @@ const DEFAULT_MIN_GALLERY_IMAGES = 3
 const MAX_RANDOM_ARTICLE_ATTEMPTS = 15
 
 /**
- * Same as `fetchRandomArticle()`, but keeps rerolling (new random language +
+ * Same as `fetchRandomArticle()`, but keeps rerolling (new random vital
  * article each time) until a candidate has at least `minImages` carousel-
  * qualifying images, or `maxAttempts` is exhausted (falls back to the last
  * candidate tried so the tap never dead-ends).
