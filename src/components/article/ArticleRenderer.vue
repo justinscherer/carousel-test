@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onUpdated, ref, watch } from 'vue'
 
-import { useConfig } from '@/composables/useConfig'
 import { globalSkin, globalTheme, PROTOWIKI_CHROME_SKIN, PROTOWIKI_CHROME_THEME } from '@/theme'
 import type { Skin, Theme } from '@/theme'
 import ArticleImageCarousel from './ArticleImageCarousel.vue'
@@ -34,13 +33,11 @@ const effectiveTheme = computed<Theme>(
 const mwParserOutputRef = ref<HTMLElement | null>(null)
 const carouselImages = ref<CarouselImage[]>([])
 const previewImage = ref<CarouselImage | null>(null)
-const { user } = useConfig()
 
 function enhanceMobileSectionHeadings(root: HTMLElement) {
-  // Logged-out readers land on an article with every H2 section collapsed
-  // (matches real Wikipedia mobile web's default reading experience);
-  // logged-in editors keep the expanded default set below.
-  const collapsedByDefault = user.value === 'logged-out'
+  // Every H2 section starts collapsed, matching real Wikipedia mobile web's
+  // default reading experience.
+  const collapsedByDefault = true
 
   root.querySelectorAll<HTMLHeadingElement>('section > h2').forEach((h2) => {
     if (h2.closest('.toc')) return
