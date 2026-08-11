@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 
+import { CdxIcon } from '@wikimedia/codex'
+import { cdxIconEye, cdxIconEyeClosed, cdxIconImage } from '@wikimedia/codex-icons'
+
 import type { CarouselImage } from './shared/extractCarouselImages'
 
 interface Props {
@@ -12,6 +15,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   open: [image: CarouselImage]
 }>()
+
+const collapsed = ref(false)
 
 const captionEls: (HTMLElement | null)[] = []
 // Vue owns the template's rendered text via this ref; truncateToTwoLines()
@@ -70,34 +75,60 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
 </script>
 
 <template>
-  <div v-if="images.length" class="article-image-carousel" role="group" aria-label="Article images">
-    <div
-      v-for="(image, index) in images"
-      :key="image.src + index"
-      class="article-image-carousel__item"
-      role="button"
-      tabindex="0"
-      @click="emit('open', image)"
-      @keydown.enter="emit('open', image)"
-      @keydown.space.prevent="emit('open', image)"
-    >
-      <img
-        :src="image.src"
-        :srcset="image.srcset"
-        :alt="image.alt"
-        loading="lazy"
-        class="article-image-carousel__image"
-      />
-      <div v-if="image.caption" class="article-image-carousel__caption-clip">
-        <p :ref="(el) => setCaptionRef(el as Element | null, index)" class="article-image-carousel__caption">
-          {{ displayCaptions[index] ?? image.caption }}
-        </p>
+  <div v-if="images.length" class="article-image-carousel-wrapper">
+    <div v-if="!collapsed" class="article-image-carousel" role="group" aria-label="Article images">
+      <div
+        v-for="(image, index) in images"
+        :key="image.src + index"
+        class="article-image-carousel__item"
+        role="button"
+        tabindex="0"
+        @click="emit('open', image)"
+        @keydown.enter="emit('open', image)"
+        @keydown.space.prevent="emit('open', image)"
+      >
+        <img
+          :src="image.src"
+          :srcset="image.srcset"
+          :alt="image.alt"
+          loading="lazy"
+          class="article-image-carousel__image"
+        />
+        <div v-if="image.caption" class="article-image-carousel__caption-clip">
+          <p :ref="(el) => setCaptionRef(el as Element | null, index)" class="article-image-carousel__caption">
+            {{ displayCaptions[index] ?? image.caption }}
+          </p>
+        </div>
       </div>
+    </div>
+    <button
+      v-if="!collapsed"
+      type="button"
+      class="article-image-carousel__hide"
+      @click="collapsed = true"
+    >
+      <CdxIcon :icon="cdxIconEyeClosed" size="x-small" />
+      Hide
+    </button>
+    <div v-else class="article-image-carousel__collapsed-bar">
+      <span class="article-image-carousel__collapsed-count">
+        <CdxIcon :icon="cdxIconImage" size="small" />
+        {{ images.length === 1 ? '1 image' : `${images.length} images` }}
+      </span>
+      <button type="button" class="article-image-carousel__show" @click="collapsed = false">
+        <CdxIcon :icon="cdxIconEye" size="x-small" />
+        Show
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
+.article-image-carousel-wrapper {
+  position: relative;
+  margin-block: var(--spacing-100, 16px);
+}
+
 .article-image-carousel {
   container-type: inline-size;
   display: flex;
@@ -105,7 +136,6 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  margin-block: var(--spacing-100, 16px);
   margin-inline-end: calc(-1 * var(--spacing-100, 16px));
 }
 
@@ -187,5 +217,76 @@ watch(() => props.images, () => void updateCaptions(), { immediate: true })
   font-size: var(--font-size-small, 12px);
   line-height: var(--line-height-x-small, 18px);
   color: var(--color-base, #202122);
+}
+
+/*
+ * Sits outside `.article-image-carousel`'s own scroll container (a sibling,
+ * not a child) so it stays pinned to the wrapper's top-right corner as the
+ * thumbnails scroll underneath it — a child of the scrolling element would
+ * scroll along with the content instead.
+ */
+.article-image-carousel__hide {
+  position: absolute;
+  top: var(--spacing-50, 8px);
+  right: var(--spacing-50, 8px);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25, 4px);
+  height: var(--size-150, 24px);
+  padding-inline: var(--spacing-35, 6px);
+  border: none;
+  border-radius: var(--border-radius-base, 2px);
+  background-color: var(--background-color-interactive, #eaecf0);
+  box-shadow: var(--box-shadow-medium, 0 4px 4px rgba(0, 0, 0, 0.06), 0 0 8px rgba(0, 0, 0, 0.06));
+  color: var(--color-neutral, #404244);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-small, 12px);
+  line-height: var(--line-height-small, 20px);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.article-image-carousel__hide:hover {
+  background-color: var(--background-color-interactive--hover, #dadde3);
+}
+
+.article-image-carousel__collapsed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-50, 8px);
+  padding: var(--spacing-25, 4px);
+  background-color: var(--background-color-neutral-subtle, #f8f9fa);
+}
+
+.article-image-carousel__collapsed-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25, 4px);
+  color: var(--color-neutral, #404244);
+  font-size: var(--font-size-small, 12px);
+  line-height: var(--line-height-small, 20px);
+  white-space: nowrap;
+}
+
+.article-image-carousel__show {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-25, 4px);
+  height: var(--size-150, 24px);
+  padding-inline: var(--spacing-35, 6px);
+  border: none;
+  border-radius: var(--border-radius-base, 2px);
+  background-color: var(--background-color-interactive, #eaecf0);
+  color: var(--color-neutral, #404244);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-small, 12px);
+  line-height: var(--line-height-small, 20px);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.article-image-carousel__show:hover {
+  background-color: var(--background-color-interactive--hover, #dadde3);
 }
 </style>
